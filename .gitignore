@@ -1,0 +1,57 @@
+HELP.md
+
+# Maven / Gradle
+/target/
+**/target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env/config overrides (keep application.properties tracked)
+application-*.properties
+*.local
+
+# Local databases / data files
+*.db
+*.sqlite
+*.sqlite3
+
+# MyBatis Generator output (if you choose to generate into a separate folder)
+/generated/
+/generated-sources/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
