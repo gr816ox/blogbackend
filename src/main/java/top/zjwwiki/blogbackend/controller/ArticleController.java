@@ -34,4 +34,23 @@ public class ArticleController {
         newArticle.setCategory(request.getCategory());
         articleService.save(newArticle);
     }
+
+    @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    public void update(@PathVariable Long id, @RequestBody ArticleRequest request) {
+        Article article = articleService.getById(id);
+        if (article != null) {
+            System.out.println("asdfasf");
+            article.setArticleId(id);
+            article.setTitle(request.getTitle());
+            article.setContent(request.getContent());
+            article.setSummary(request.getSummary());
+            article.setCategory(request.getCategory());
+            articleService.update(article);
+        }
+    }
+
+    @DeleteMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    public void delete(@PathVariable Long id) {
+        articleService.delete(id);
+    }
 }

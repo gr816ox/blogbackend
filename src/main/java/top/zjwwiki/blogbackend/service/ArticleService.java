@@ -26,4 +26,12 @@ public class ArticleService {
     public void save(Article article) {
         articleMapper.insert(article);
     }
+
+    public void delete(Long articleId) {
+        articleMapper.deleteByPrimaryKey(articleId);
+    }
+
+    public void update(Article article) {
+        articleMapper.updateByPrimaryKeyWithBLOBs(article);
+    }
 }
