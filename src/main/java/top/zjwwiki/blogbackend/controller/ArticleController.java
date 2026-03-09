@@ -27,6 +27,7 @@ public class ArticleController {
 
     @PostMapping(consumes = "application/json", produces = "application/json")
     public void create(@RequestBody ArticleRequest request) {
+        System.out.println("123213");
         Article newArticle = new Article();
         newArticle.setTitle(request.getTitle());
         newArticle.setContent(request.getContent());
@@ -49,7 +50,7 @@ public class ArticleController {
         }
     }
 
-    @DeleteMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    @DeleteMapping(value = "/{id}")
     public void delete(@PathVariable Long id) {
         articleService.delete(id);
     }
