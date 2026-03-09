@@ -10,22 +10,21 @@ import top.zjwwiki.blogbackend.service.ArticleService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/articles")
 public class ArticleController {
     @Autowired
     private ArticleService articleService;
 
-    @GetMapping(value = "/{id}", produces = "application/json;charset=utf-8")
+    @GetMapping(value = "/api/public/articles/{id}", produces = "application/json;charset=utf-8")
     public Article get(@PathVariable Long id) {
         return articleService.getById(id);
     }
 
-    @GetMapping("")
+    @GetMapping("/api/public/articles")
     public List<Article> getall() {
         return articleService.getall();
     }
 
-    @PostMapping(consumes = "application/json", produces = "application/json")
+    @PostMapping(value = "/api/private/articles", consumes = "application/json", produces = "application/json")
     public void create(@RequestBody ArticleRequest request) {
         System.out.println("123213");
         Article newArticle = new Article();

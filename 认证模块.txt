@@ -1,0 +1,195 @@
+Zjw's Wiki
+← 返回
+自增日记之用户模块（Vue3 + Element Plus 前端 / Spring Boot 后端）
+📌 blog自增
+📅 2026年03月03日 15:03
+用户模块（Vue3 + Element Plus 前端 / Spring Boot 后端） #
+目标：实现登录后确认是主账户（ADMIN）才开放新增/编辑/删除功能；否则只能浏览。
+
+前端隐藏按钮只是体验；安全必须靠后端鉴权，非 ADMIN 的写请求要直接返回 403。
+
+1. 需求拆解 #
+未登录：只能浏览文章列表 / 文章详情
+已登录但不是主账户：仍只能浏览
+已登录且是主账户（admin）：可以新增、编辑、删除
+建议用标准“角色”建模：
+
+ROLE_ADMIN：主账户
+ROLE_USER：普通账户
+2. 后端 Spring Boot（推荐：Spring Security + JWT） #
+2.1 表结构（最小可用） #
+users：id, username, password_hash, enabled, role
+role 值：ADMIN / USER
+2.2 登录接口 #
+POST /api/auth/login
+
+入参：{ username, password }
+返回：{ token, user: { id, username, role } }
+GET /api/auth/me
+
+header：Authorization: Bearer <token>
+返回：用户信息（用于前端刷新页面后恢复状态）
+2.3 权限控制（核心） #
+允许匿名浏览：
+
+GET /api/articles
+GET /api/articles/{id}
+仅 ADMIN 允许写操作：
+
+POST /api/articles
+PUT /api/articles/{id}
+DELETE /api/articles/{id}
+实现方式建议：
+
+Spring Security 配置 SecurityFilterChain
+JWT Filter 解析 Authorization，构建 Authentication
+路由规则示例：
+/api/auth/**：permitAll
+GET /api/articles/**：permitAll
+POST/PUT/DELETE /api/articles/**：hasRole("ADMIN")
+其他：authenticated
+也可以在 Controller 方法上加：
+
+@PreAuthorize("hasRole('ADMIN')")
+2.4 关于你之前 DELETE 415 错误 #
+按 REST 规范：DELETE /api/articles/{id} 不需要请求体。
+
+后端建议写成：
+
+@DeleteMapping("/api/articles/{id}")
+参数用 @PathVariable Long id
+不要写 @RequestBody，也不要配置 consumes = application/json，否则就容易出现 415 Unsupported Media Type。
+
+3. 前端 Vue3 + Element Plus #
+3.1 需要一个登录态 store（Pinia） #
+存储：
+
+token
+user（含 role）
+并提供：
+
+isLoggedIn
+isAdmin
+3.2 axios 拦截器自动带 token #
+请求拦截：如果有 token，加 header：Authorization: Bearer ${token}
+响应拦截：遇到 401 清登录态并跳转登录页（或提示）
+3.3 路由守卫（防止非 admin 进入创建/编辑页面） #
+给创建页路由加：meta.requiresAdmin = true
+beforeEach 判断：非 admin → 重定向到首页或 403 页面
+3.4 UI 控制：只有 ADMIN 才显示“新增/编辑/删除” #
+文章列表页：只有 isAdmin 才显示编辑/删除按钮
+导航栏或首页：只有 isAdmin 才显示“新增文章”按钮
+注意：即使 UI 隐藏，用户仍然可能直接发请求，所以后端必须做 hasRole 校验。
+
+4. 前端代码骨架（可直接套用） #
+4.1 Pinia store：stores/auth.ts #
+import { defineStore } from 'pinia'
+
+type User = {
+  id: number
+  username: string
+  role: 'ADMIN' | 'USER'
+}
+
+export const useAuthStore = defineStore('auth', {
+  state: () => ({
+    token: localStorage.getItem('token') || '',
+    user: null as User | null,
+  }),
+  getters: {
+    isLoggedIn: (s) => !!s.token,
+    isAdmin: (s) => s.user?.role === 'ADMIN',
+  },
+  actions: {
+    setSession(token: string, user: User) {
+      this.token = token
+      this.user = user
+      localStorage.setItem('token', token)
+    },
+    clearSession() {
+      this.token = ''
+      this.user = null
+      localStorage.removeItem('token')
+    },
+  },
+})
+4.2 axios 实例 + 拦截器：utils/http.ts #
+import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
+
+export const http = axios.create({
+  baseURL: '/api',
+  timeout: 15000,
+})
+
+http.interceptors.request.use((config) => {
+  const auth = useAuthStore()
+  if (auth.token) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Bearer ${auth.token}`
+  }
+  return config
+})
+
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401) {
+      const auth = useAuthStore()
+      auth.clearSession()
+      // 可选：跳转登录页
+      // window.location.href = '/login'
+    }
+    return Promise.reject(err)
+  }
+)
+4.3 路由守卫（admin 才能进创建页）：router/index.js 或 router/index.ts #
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    // ...existing code...
+    {
+      path: '/create-post',
+      name: 'create-post',
+      component: () => import('@/views/createPost.vue'),
+      meta: { requiresAdmin: true },
+    },
+  ],
+})
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return { path: '/' }
+  }
+  return true
+})
+
+export default router
+4.4 列表页按角色显示按钮（示例逻辑） #
+<script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const canManage = computed(() => auth.isAdmin)
+</script>
+
+<template>
+  <!-- ...existing code... -->
+  <div class="actions" v-if="canManage">
+    <!-- 编辑/删除按钮 -->
+  </div>
+</template>
+5. 落地检查清单 #
+后端写接口必须分“读/写”权限，写接口必须 ADMIN 才能调用
+前端用 Pinia 保存登录态（token+role），并在 axios 拦截器自动加 Bearer Token
+路由守卫保护创建/编辑页面
+UI 按 isAdmin 控制按钮显示
+6. 还需确认的信息（用于细化成可直接跑通的完整实现） #
+后端当前使用：Session 还是 JWT？
+Spring Boot 的删除接口 @DeleteMapping 当前怎么写？（有无 @RequestBody/consumes）
+前端 package.json 是否已安装 pinia？以及 element-plus 版本是多少？
