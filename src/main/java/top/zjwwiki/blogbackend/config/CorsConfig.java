@@ -10,7 +10,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 // ⚠️ 修正1：删除多余空格！原代码 "https://your-vue-domain.com  " 有空格会失效
-                .allowedOrigins("http://localhost:5173", "http://localhost:8081") // ← 开发环境常用端口
+                .allowedOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:8081") // ← 开发环境常用端口
                 // ⚠️ 修正2：添加必要配置（否则 OPTIONS 预检失败）
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
