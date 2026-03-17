@@ -33,4 +33,10 @@ public class ArticleController {
         newArticle.setCategory(request.getCategory());
         articleService.save(newArticle);
     }
+
+    @DeleteMapping("/api/private/articles/{id}")
+    public void delete(@PathVariable Long id) {
+        articleService.delete(id);
+    }
+
 }

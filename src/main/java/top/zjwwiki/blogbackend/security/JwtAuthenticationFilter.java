@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 从 Token 解析 subject（用户名）；签名非法时 JwtUtils 可能抛异常。
             String username = jwtUtils.extractUsername(token);
-
+            System.out.println(username);
 			// ======== 步骤 3：如果当前上下文尚未认证，则尝试认证 ========
 			// 某些场景下，前置过滤器可能已写入认证信息，这里避免重复覆盖。
             // 避免覆盖当前请求链中已存在的认证信息。

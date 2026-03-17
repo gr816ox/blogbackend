@@ -187,9 +187,9 @@
     <selectKey keyProperty="articleId" order="AFTER" resultType="java.lang.Long">
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into article (title, created_at, category, 
+    insert into article (title, category, 
       summary, content)
-    values (#{title,jdbcType=VARCHAR}, #{createdAt,jdbcType=TIMESTAMP}, #{category,jdbcType=VARCHAR}, 
+    values (#{title,jdbcType=VARCHAR}, #{category,jdbcType=VARCHAR}, 
       #{summary,jdbcType=VARCHAR}, #{content,jdbcType=LONGVARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="top.zjwwiki.blogbackend.generated.Article">

@@ -32,6 +32,11 @@
 set -euf
 [ "${MVNW_VERBOSE-}" != debug ] || set -x
 
+if [ -x "C:/Users/jiawei zhu/.vscode/extensions/redhat.java-1.53.0-win32-x64/jre/21.0.10-win32-x86_64/bin/java.exe" ]; then
+  JAVA_HOME="C:/Users/jiawei zhu/.vscode/extensions/redhat.java-1.53.0-win32-x64/jre/21.0.10-win32-x86_64"
+  export JAVA_HOME
+fi
+
 # OS specific support.
 native_path() { printf %s\\n "$1"; }
 case "$(uname)" in
