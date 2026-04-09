@@ -4,7 +4,7 @@
   <resultMap id="BaseResultMap" type="top.zjwwiki.blogbackend.generated.User">
     <id column="user_id" jdbcType="INTEGER" property="userId" />
     <result column="username" jdbcType="VARCHAR" property="username" />
-    <result column="password" jdbcType="VARCHAR" property="password" />
+    <result column="password_hashed" jdbcType="VARCHAR" property="password" />
     <result column="role" jdbcType="VARCHAR" property="role" />
     <result column="enabled" jdbcType="TINYINT" property="enabled" />
   </resultMap>
@@ -70,7 +70,7 @@
   </sql>
 
   <sql id="Base_Column_List">
-    user_id, username, password, role, enabled
+    user_id, username, password_hashed, role, enabled
   </sql>
 
   <select id="selectByExample" parameterType="top.zjwwiki.blogbackend.generated.UserExample" resultMap="BaseResultMap">
@@ -79,7 +79,7 @@
       distinct
     </if>
     <include refid="Base_Column_List" />
-    from user
+    from users
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
@@ -89,27 +89,27 @@
   </select>
 
   <select id="countByExample" parameterType="top.zjwwiki.blogbackend.generated.UserExample" resultType="java.lang.Long">
-    select count(*) from user
+    select count(*) from users
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </select>
 
   <delete id="deleteByExample" parameterType="top.zjwwiki.blogbackend.generated.UserExample">
-    delete from user
+    delete from users
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
 
   <insert id="insert" parameterType="top.zjwwiki.blogbackend.generated.User">
-    insert into user (user_id, username, password, role, enabled)
+    insert into users (user_id, username, password_hashed, role, enabled)
     values (#{userId,jdbcType=INTEGER}, #{username,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR},
       #{role,jdbcType=VARCHAR}, #{enabled,jdbcType=TINYINT})
   </insert>
 
   <insert id="insertSelective" parameterType="top.zjwwiki.blogbackend.generated.User">
-    insert into user
+    insert into users
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="userId != null">
         user_id,
@@ -118,7 +118,7 @@
         username,
       </if>
       <if test="password != null">
-        password,
+        password_hashed,
       </if>
       <if test="role != null">
         role,
@@ -147,7 +147,7 @@
   </insert>
 
   <update id="updateByExampleSelective" parameterType="map">
-    update user
+    update users
     <set>
       <if test="row.userId != null">
         user_id = #{row.userId,jdbcType=INTEGER},
@@ -156,7 +156,7 @@
         username = #{row.username,jdbcType=VARCHAR},
       </if>
       <if test="row.password != null">
-        password = #{row.password,jdbcType=VARCHAR},
+        password_hashed = #{row.password,jdbcType=VARCHAR},
       </if>
       <if test="row.role != null">
         role = #{row.role,jdbcType=VARCHAR},
@@ -171,10 +171,10 @@
   </update>
 
   <update id="updateByExample" parameterType="map">
-    update user
+    update users
     set user_id = #{row.userId,jdbcType=INTEGER},
       username = #{row.username,jdbcType=VARCHAR},
-      password = #{row.password,jdbcType=VARCHAR},
+      password_hashed = #{row.password,jdbcType=VARCHAR},
       role = #{row.role,jdbcType=VARCHAR},
       enabled = #{row.enabled,jdbcType=TINYINT}
     <if test="_parameter != null">

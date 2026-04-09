@@ -1,56 +1,62 @@
 package top.zjwwiki.blogbackend.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import top.zjwwiki.blogbackend.dto.ArticleRequest;
+import top.zjwwiki.blogbackend.dto.ArticleSummaryResponse;
+import top.zjwwiki.blogbackend.dto.PageResponse;
 import top.zjwwiki.blogbackend.generated.Article;
 import top.zjwwiki.blogbackend.service.ArticleService;
 
-import java.util.List;
-
 @RestController
+@RequestMapping
 public class ArticleController {
-    @Autowired
-    private ArticleService articleService;
+    private final ArticleService articleService;
 
-    @GetMapping(value = "/api/public/articles/{id}", produces = "application/json;charset=utf-8")
+    public ArticleController(ArticleService articleService) {
+        this.articleService = articleService;
+    }
+
+    @GetMapping(value = {"/api/articles/{id}", "/api/public/articles/{id}"}, produces = "application/json;charset=utf-8")
     public Article get(@PathVariable Long id) {
-        return articleService.getById(id);
+        return articleService.getByIdOrThrow(id);
     }
 
-    @GetMapping("/api/public/articles")
-    public List<Article> getall() {
-        return articleService.getall();
+    @GetMapping({"/api/articles", "/api/public/articles"})
+    public PageResponse<ArticleSummaryResponse> getAll(@RequestParam(required = false) String keyword,
+                                                       @RequestParam(required = false) String category,
+                                                       @RequestParam(required = false) Integer page,
+                                                       @RequestParam(required = false) Integer size) {
+        return articleService.getPage(keyword, category, page, size);
     }
 
-    @PostMapping(value = "/api/private/articles", consumes = "application/json", produces = "application/json")
-    public void create(@RequestBody ArticleRequest request) {
-        System.out.println("123213");
-        Article newArticle = new Article();
-        newArticle.setTitle(request.getTitle());
-        newArticle.setContent(request.getContent());
-        newArticle.setSummary(request.getSummary());
-        newArticle.setCategory(request.getCategory());
-        articleService.save(newArticle);
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping(value = {"/api/articles", "/api/private/articles"}, consumes = "application/json", produces = "application/json")
+    public ResponseEntity<Article> create(@RequestBody ArticleRequest request) {
+        Article article = articleService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(article);
     }
 
-    @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
-    public void update(@PathVariable Long id, @RequestBody ArticleRequest request) {
-        Article article = articleService.getById(id);
-        if (article != null) {
-            System.out.println("asdfasf");
-            article.setArticleId(id);
-            article.setTitle(request.getTitle());
-            article.setContent(request.getContent());
-            article.setSummary(request.getSummary());
-            article.setCategory(request.getCategory());
-            articleService.update(article);
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping(value = {"/api/articles/{id}", "/api/private/articles/{id}"}, consumes = "application/json", produces = "application/json")
+    public Article update(@PathVariable Long id, @RequestBody ArticleRequest request) {
+        return articleService.update(id, request);
     }
 
-    @DeleteMapping(value = "/{id}")
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping(value = {"/api/articles/{id}", "/api/private/articles/{id}"})
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         articleService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

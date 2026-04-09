@@ -3,8 +3,11 @@ package top.zjwwiki.blogbackend.dto;
 
 public class ArticleRequest {
     private String title;
+
     private String category;
+
     private String summary;
+
     private String content;
 
     // Getters and Setters

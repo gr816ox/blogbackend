@@ -3,9 +3,11 @@ package top.zjwwiki.blogbackend.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,9 +17,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import top.zjwwiki.blogbackend.security.JwtAuthenticationFilter;
+import top.zjwwiki.blogbackend.security.RestAccessDeniedHandler;
+import top.zjwwiki.blogbackend.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @EnableConfigurationProperties(JwtProperties.class)
 /**
  * Spring Security 核心配置。
@@ -39,7 +44,10 @@ public class SecurityConfig {
      * 每个 HTTP 请求都会经过这里定义的一系列安全规则。
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   RestAuthenticationEntryPoint restAuthenticationEntryPoint,
+                                                   RestAccessDeniedHandler restAccessDeniedHandler)
             throws Exception {
         // JWT 接口通常是无状态的，因此需要调整 CSRF 和 Session 的默认行为。
         http
@@ -51,9 +59,17 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // 登录注册和公开接口放行。
-                .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
+                .requestMatchers("/error").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/articles/**", "/api/public/articles/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/articles/**", "/api/private/articles/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/articles/**", "/api/private/articles/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/articles/**", "/api/private/articles/**").hasRole("ADMIN")
                 // 其余接口都要求已认证。
                 .anyRequest().authenticated())
+            .exceptionHandling(exceptionHandling -> exceptionHandling
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
+                .accessDeniedHandler(restAccessDeniedHandler))
             // 关键点：JWT 过滤器要在用户名密码过滤器之前执行。
             // 原因：我们不是表单登录，而是希望优先从请求头里的 Token 还原登录态。
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

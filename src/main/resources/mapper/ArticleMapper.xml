@@ -21,6 +21,15 @@
     -->
     <result column="content" jdbcType="LONGVARCHAR" property="content" />
   </resultMap>
+  <resultMap id="ArticleSummaryResponseMap" type="top.zjwwiki.blogbackend.dto.ArticleSummaryResponse">
+    <constructor>
+      <idArg column="article_id" javaType="java.lang.Long" />
+      <arg column="title" javaType="java.lang.String" />
+      <arg column="category" javaType="java.lang.String" />
+      <arg column="summary" javaType="java.lang.String" />
+      <arg column="created_at" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
   <sql id="Example_Where_Clause">
     <!--
       WARNING - @mbg.generated
@@ -104,6 +113,19 @@
       This element was generated on Tue Feb 24 09:41:23 CST 2026.
     -->
     content
+  </sql>
+  <sql id="Article_Summary_Filter_Where_Clause">
+    <where>
+      <if test="category != null and category != ''">
+        and category = #{category}
+      </if>
+      <if test="keyword != null and keyword != ''">
+        and (
+          title like concat('%', #{keyword}, '%')
+          or summary like concat('%', #{keyword}, '%')
+        )
+      </if>
+    </where>
   </sql>
   <select id="selectByExampleWithBLOBs" parameterType="top.zjwwiki.blogbackend.generated.ArticleExample" resultMap="ResultMapWithBLOBs">
     <!--
@@ -245,6 +267,18 @@
       <include refid="Example_Where_Clause" />
     </if>
   </select>
+  <select id="countArticleSummaries" resultType="java.lang.Long">
+    select count(*)
+    from article
+    <include refid="Article_Summary_Filter_Where_Clause" />
+  </select>
+  <select id="selectArticleSummaries" resultMap="ArticleSummaryResponseMap">
+    select article_id, title, category, created_at, summary
+    from article
+    <include refid="Article_Summary_Filter_Where_Clause" />
+    order by created_at desc, article_id desc
+    limit #{limit} offset #{offset}
+  </select>
   <update id="updateByExampleSelective" parameterType="map">
     <!--
       WARNING - @mbg.generated
@@ -360,5 +394,6 @@
   </update>
   <select id="selectArticleList" parameterType="top.zjwwiki.blogbackend.generated.Article">
     select article_id, title, category, created_at, summary from article
+    order by created_at desc, article_id desc
   </select>
 </mapper>

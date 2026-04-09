@@ -2,10 +2,12 @@ package top.zjwwiki.blogbackend.security;
 
 import java.io.IOException;
 
+import io.jsonwebtoken.JwtException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,30 +49,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-			// ======== 步骤 2：从 Token 解析用户名 ========
+            try {
+				// ======== 步骤 2：从 Token 解析用户名 ========
 
-            // 从 Token 解析 subject（用户名）；签名非法时 JwtUtils 可能抛异常。
-            String username = jwtUtils.extractUsername(token);
+                // 从 Token 解析 subject（用户名）；签名非法时 JwtUtils 可能抛异常。
+                String username = jwtUtils.extractUsername(token);
 
-			// ======== 步骤 3：如果当前上下文尚未认证，则尝试认证 ========
-			// 某些场景下，前置过滤器可能已写入认证信息，这里避免重复覆盖。
-            // 避免覆盖当前请求链中已存在的认证信息。
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+				// ======== 步骤 3：如果当前上下文尚未认证，则尝试认证 ========
+				// 某些场景下，前置过滤器可能已写入认证信息，这里避免重复覆盖。
+                // 避免覆盖当前请求链中已存在的认证信息。
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-				// ======== 步骤 4：校验 Token 与用户是否匹配且未过期 ========
+					// ======== 步骤 4：校验 Token 与用户是否匹配且未过期 ========
 
-                // 只有用户名匹配且 Token 未过期时，才认为 Token 有效。
-                if (jwtUtils.validateToken(token, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    // 只有用户名匹配且 Token 未过期时，才认为 Token 有效。
+                    if (jwtUtils.validateToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                    // 挂载请求维度信息（如来源 IP），便于审计与排查。
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        // 挂载请求维度信息（如来源 IP），便于审计与排查。
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                    // 写入上下文后，Spring Security 会将本次请求视为已认证。
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                        // 写入上下文后，Spring Security 会将本次请求视为已认证。
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
                 }
+            } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
+                SecurityContextHolder.clearContext();
             }
         }
 

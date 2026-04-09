@@ -2,8 +2,11 @@ package top.zjwwiki.blogbackend.service;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import top.zjwwiki.blogbackend.generated.User;
 import top.zjwwiki.blogbackend.generated.UserExample;
@@ -21,8 +24,12 @@ public class UserService {
 	}
 
 	public User findByUsername(String username) {
+		if (!StringUtils.hasText(username)) {
+			return null;
+		}
+
 		UserExample example = new UserExample();
-		example.createCriteria().andUsernameEqualTo(username);
+		example.createCriteria().andUsernameEqualTo(username.trim());
 		List<User> users = userMapper.selectByExample(example);
 		return users.isEmpty() ? null : users.get(0);
 	}
@@ -32,16 +39,21 @@ public class UserService {
 	}
 
 	public User register(String username, String rawPassword) {
-		if (existsByUsername(username)) {
-			throw new IllegalArgumentException("Username already exists: " + username);
+		String normalizedUsername = username == null ? null : username.trim();
+		if (!StringUtils.hasText(normalizedUsername)) {
+			throw new IllegalArgumentException("Username must not be blank");
+		}
+
+		if (existsByUsername(normalizedUsername)) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
 		}
 
 		User user = new User();
-		user.setUsername(username);
+		user.setUsername(normalizedUsername);
 		user.setPassword(passwordEncoder.encode(rawPassword));
 		user.setRole("USER");
 		user.setEnabled((byte) 1);
 		userMapper.insertSelective(user);
-		return findByUsername(username);
+		return findByUsername(normalizedUsername);
 	}
 }
